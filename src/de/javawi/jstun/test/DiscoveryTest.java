@@ -309,7 +309,7 @@ public class DiscoveryTest {
 				InetAddress localAddress = sendSocket.getLocalAddress();
 
 				sendSocket.close();
-
+				
 				DatagramSocket receiveSocket = new DatagramSocket(localPort, localAddress);
 				receiveSocket.connect(InetAddress.getByName(stunServer), ca.getPort());
 				receiveSocket.setSoTimeout(timeout);
