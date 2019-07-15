@@ -15,8 +15,7 @@ import javax.sip.address.*;
 import javax.sip.address.URI;
 import javax.sip.header.*;
 import javax.sip.message.*;
-
-import Callee.PCS_RTP_Callee;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.SystemMenuBar;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,7 +31,6 @@ import de.javawi.jstun.attribute.MessageAttributeParsingException;
 import de.javawi.jstun.header.MessageHeaderParsingException;
 import de.javawi.jstun.test.BindingLifetimeTest;
 import de.javawi.jstun.util.UtilityException;
-
 import javax.sip.ServerTransaction;
 
 
@@ -48,6 +46,7 @@ import javax.sip.ServerTransaction;
 
 
 public class Shootisttest implements SipListener {
+	
 	
 	 private static ClientTransaction inviteTidClientCall;
 
@@ -94,7 +93,7 @@ public class Shootisttest implements SipListener {
     protected static ServerTransaction inviteTidserver;
     
     public static String localIP;
-    private static String IPcallee;
+    public static String IPcallee;
     public static String RTPportcallee;
     public static String RTCPportcallee;
     public static int localRtpPort;
@@ -155,7 +154,7 @@ public void getlocalIP()
 	  }
     
     
-    private  void recordingSocket(String IPcallee, String RTPportcallee, String RTCPportcallee)
+public  void recordingSocket(String IPcallee, String RTPportcallee, String RTCPportcallee)
     {
       Shootisttest.IPcallee = IPcallee;    
       
@@ -181,7 +180,7 @@ public void getlocalIP()
     }
     
   
-    private void recordingSocket2(String IPcaller, String RTPportcaller, String RTCPportcaller)
+    public void recordingSocket2(String IPcaller, String RTPportcaller, String RTCPportcaller)
 	  {
 	    Shootisttest.IPcaller = IPcaller;
 	    Shootisttest.RTPportcaller = RTPportcaller;
@@ -204,7 +203,7 @@ public void getlocalIP()
 	    return RTCPportcaller.replaceAll(" ", "");
 	  }
 	  
-
+	  
     
     
     
@@ -255,19 +254,23 @@ public void getlocalIP()
         	System.out.println("processAck_processAck_processAck");
             processAck(requestReceivedEvent, serverTransactionId);
             System.out.println("processAck_processAck_processAck_END");
-            System.out.println("processBye");
-            SendBye();
+            try {
+				Thread.sleep(500);
+				System.out.println("processBye");
+	            SendBye();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
             
             
-        } else if (request.getMethod().equals(Request.BYE)) {
-            processBye2(requestReceivedEvent, serverTransactionId);
+            
+        } else  if (request.getMethod().equals("BYE")) {
+        	processBye(requestReceivedEvent, serverTransactionId);
         } else if (request.getMethod().equals(Request.CANCEL)) {
             processCancel(requestReceivedEvent, serverTransactionId);
         }
-        if (request.getMethod().equals(Request.BYE)){
-            processBye(request, serverTransactionId);
-    	}
-
+       
     }
     
     public void processInvite(RequestEvent requestEvent, ServerTransaction serverTransaction)
@@ -755,27 +758,7 @@ public void getlocalIP()
       }
     }
     
-    public void processBye2(RequestEvent requestEvent, ServerTransaction serverTransactionId)
-    {
-      SipProvider sipProvider = (SipProvider)requestEvent.getSource();
-      Request request = requestEvent.getRequest();
-      Dialog dialogcall = requestEvent.getDialog();
-      System.out.println("local party = " + dialogcall.getLocalParty());
-      try
-      {
-        System.out.println("shootme:  got a bye sending OK.");
-        Response response = messageFactory.createResponse(200, request);
-        serverTransactionId.sendResponse(response);
-        System.out.println("Dialog State is " + 
-          serverTransactionId.getDialog().getState());
-      }
-      catch (Exception ex)
-      {
-        ex.printStackTrace();
-        System.exit(0);
-      }
-      new PCS_RTP_Callee().EndSession();
-    }
+
 
     public void processCancel(RequestEvent requestEvent, ServerTransaction serverTransactionId)
     {
@@ -807,21 +790,21 @@ public void getlocalIP()
     }
     
     
-    public void processBye(Request request, ServerTransaction serverTransactionId)
+    public void processBye(RequestEvent requestEvent, ServerTransaction serverTransaction)
     {
       System.out.println("shootist:  got a bye .");
-      new PCS_RTP_Caller().EndSession2();
+      new PCS_RTP_Caller().EndSession();
       try
       {
-        if (serverTransactionId == null)
+        if (serverTransaction == null)
         {
           System.out.println("shootist:  null TID.");
           return;
         }
-        Dialog dialog = serverTransactionId.getDialog();
+        Dialog dialog = serverTransaction.getDialog();
         System.out.println("Dialog State = " + dialog.getState());
         Response response = messageFactory.createResponse(200, request);
-        serverTransactionId.sendResponse(response);
+        serverTransaction.sendResponse(response);
         System.out.println("shootist:  Sending OK.");
         System.out.println("Dialog State = " + dialog.getState());
       }
@@ -830,6 +813,7 @@ public void getlocalIP()
         ex.printStackTrace();
         System.exit(0);
       }
+     
     }
 
 
@@ -1259,7 +1243,7 @@ public void getlocalIP()
                   + "a=rtpmap:0 PCMU/8000\r\n" + "a=rtpmap:4 G723/8000\r\n"
                   + "a=rtpmap:18 G729A/8000\r\n" + "a=ptime:20\r\n";
           byte[] contents = sdpData.getBytes();*/
-          byte[] contents = SDPsetting().getBytes();
+          byte[] contents = SDPsetting2().getBytes();
 
           request.setContent(contents, ContentTypeHeader);
       /*    
@@ -1575,7 +1559,7 @@ public void getlocalIP()
         MediaDescription md1 = sdpFactory.createMediaDescription("audio", localRtpPort, 1, "RTP/AVP", format);
         
         Vector attrs1 = new Vector();
-        localRtcpPort = (int)(Math.random() * 32767.0D + 24576.0D);
+        localRtcpPort = localRtpPort+1;/*(int)(Math.random() * 32767.0D + 24576.0D);*/
         Attribute attr1 = sdpFactory.createAttribute("rtcp", Integer.toString(localRtcpPort));
         
         Attribute attr2 = sdpFactory.createAttribute("rtpmap", "0 pcmu/8000");
@@ -2072,10 +2056,11 @@ public void getlocalIP()
                 headerFactoryImpl.createPathHeader(toNameAddress);
             request.addHeader(path1);
             request.addHeader(path2);
+          /*  
             if (Request.INVITE.equals("INVITE")) {
                 request.setContent(SDPsetting(), contentTypeHeader);
               }
-            
+           */ 
 /*
             String sdpData = "v=0\r\n"
                     + "o=4855 13760799956958020 13760799956958020"
@@ -2207,6 +2192,10 @@ public void getlocalIP()
 	    {
 	      e.printStackTrace();
 	    }
+		//  new PCS_RTP_Caller().EndSession();
+	
 	}
+
+	
    
 }

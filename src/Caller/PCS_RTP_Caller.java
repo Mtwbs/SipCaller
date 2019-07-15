@@ -8,6 +8,7 @@ import de.javawi.jstun.attribute.MessageAttributeParsingException;
 import de.javawi.jstun.header.MessageHeaderParsingException;
 import de.javawi.jstun.test.BindingLifetimeTest;
 import de.javawi.jstun.util.UtilityException;
+import auth.GreetingServer;
 import auth.Shootisttest;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -36,6 +37,7 @@ import javax.swing.JOptionPane;
 
 import jlibrtp.DataFrame;
 import jlibrtp.Participant;
+import jlibrtp.Participant2;
 import jlibrtp.RTPAppIntf;
 import jlibrtp.RTPSession;
 
@@ -68,14 +70,33 @@ public class PCS_RTP_Caller
     
     DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, dstPORT);
     clientSocket.send(sendPacket);
-    
+    try {
+		Thread.sleep(5000);
+	} catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
     clientSocket.close();
   }
   
   private Shootisttest test = new Shootisttest();
-  
-  
+   
   private void STUNPut()
+		    throws SocketException, UnknownHostException, MessageAttributeParsingException, MessageHeaderParsingException, UtilityException, IOException, MessageAttributeException
+		  {
+		    System.out.println(localRtpPort + " SAME111111@@@@@@@");
+		    getstun.test2(localRtpPort);
+		    localRtpPort = getstun.ma.getPort();
+		    
+		    System.out.println(localRtpPort + " SAME222222@@@@@@@");
+		    
+		    System.out.println(localRtcpPort + " SAME111111@@@@@@@");
+		    getstun.test2(localRtcpPort);
+		    localRtcpPort = getstun.ma.getPort();
+		    
+		    System.out.println(localRtcpPort + " SAME222222@@@@@@@");
+		  }
+  private void STUNPut2()
 		    throws SocketException, UnknownHostException, MessageAttributeParsingException, MessageHeaderParsingException, UtilityException, IOException, MessageAttributeException
 		  {
 		    System.out.println(localRtpPort + " SAME111111@@@@@@@");
@@ -103,6 +124,14 @@ public class PCS_RTP_Caller
     System.out.println("remote RTCP port: " + remoteRtcpPort);
     System.out.println("Local RTP port: " + localRtpPort);
     System.out.println("Local RTCP port: " + localRtcpPort);
+    /*
+    try {
+		UDPping(localRtpPort,remoteRtpPort);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+	*/
   }
   
   public void Port2()
@@ -117,17 +146,27 @@ public class PCS_RTP_Caller
     System.out.println(" Caller remote Rtcp Port: " + remoteRtcpPort);
     System.out.println(" Callee local Rtp Port: " + localRtpPort);
     System.out.println(" Callee local Rtcp Port: " + localRtcpPort);
+   /*
+    try {
+		UDPping(localRtpPort,remoteRtpPort);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+	*/
   }
   
   private final int BUFFER_SIZE = 1024;
   private static AudioFormat format;
-  private static TargetDataLine microphone;
-  private static SourceDataLine speaker;
-  private static RTPSession rtpSession;
+  public static TargetDataLine microphone;
+  public static SourceDataLine speaker;
+  public static RTPSession rtpSession;
   private DatagramSocket rtpSocket;
   private DatagramSocket rtcpSocket;
-  private static boolean isRegistered = false;
-  private static boolean isReceived = false;
+  public static boolean isRegistered = false;
+  public static boolean isReceived = false;
+  public static boolean isRegistered2 = false;
+  public static boolean isReceived2 = false;
   public static PCS_UI ui;
   public static boolean SIPVoiceFlag;
   
@@ -217,7 +256,7 @@ public class PCS_RTP_Caller
       {
         if (PCS_RTP_Caller.ui.getButtonText() == "Dial")
         {
-          PCS_RTP_Caller.this.test.SendInvite();
+          PCS_RTP_Caller.this.test.SendInvite();           
           PCS_RTP_Caller.ui.setButtonText("End");
           PCS_RTP_Caller.ui.setStateText("Running");
         }
@@ -258,7 +297,7 @@ public class PCS_RTP_Caller
   
   public void EndSession2()
   {
-    if (isRegistered)
+    if (isRegistered2)
     {
       Enumeration<Participant> list = rtpSession.getParticipants();
       while (list.hasMoreElements())
@@ -266,8 +305,8 @@ public class PCS_RTP_Caller
         Participant p = (Participant)list.nextElement();
         rtpSession.removeParticipant(p);
       }
-      this.isReceived = false;
-      isRegistered = false;
+      this.isReceived2 = false;
+      isRegistered2 = false;
       rtpSession.endSession();
       rtpSession = null;
     }
@@ -304,6 +343,44 @@ public class PCS_RTP_Caller
     rtpSession.addParticipant(p);
     rtpSession.RTPSessionRegister(this, null, null);
     isRegistered = true;
+    try
+    {
+      Thread.sleep(1000L);
+    }
+    catch (Exception localException1) {}
+  }
+  
+  public void addNewParticipant2(String networkAddress, int dstRtpPort, int dstRtcpPort, int srcRtpPort, int srcRtcpPort)
+  {
+	
+	  try
+	    {
+	      new PCS_RTP_Caller().STUNPut2();
+	    }
+	    catch (MessageHeaderParsingException|UtilityException|IOException|MessageAttributeException e1)
+	    {
+	      e1.printStackTrace();
+	    }
+	    
+    try
+    {
+      this.rtpSocket = new DatagramSocket(srcRtpPort);
+      this.rtcpSocket = new DatagramSocket(srcRtcpPort);
+      this.rtpSocket.setReuseAddress(true);
+      this.rtcpSocket.setReuseAddress(true);
+    }
+    catch (Exception e)
+    {
+      System.out.println("RTPSession failed to obtain port");
+      JOptionPane.showMessageDialog(null, "RTPSession failed to obtain port");
+      System.exit(-1);
+    }
+    rtpSession = new RTPSession(this.rtpSocket, this.rtcpSocket);
+    Participant p = new Participant(networkAddress, dstRtpPort, dstRtcpPort);
+    rtpSession.addParticipant(p);
+    rtpSession.RTPSessionRegister(this, null, null);
+    Parti_Caller = p.toString();
+    isRegistered2 = true;
     try
     {
       Thread.sleep(1000L);
@@ -358,42 +435,7 @@ public class PCS_RTP_Caller
     thread.start();
   }
   
-  public void addNewParticipant2(String networkAddress, int dstRtpPort, int dstRtcpPort, int srcRtpPort, int srcRtcpPort)
-  {
-	  try
-	    {
-	      new PCS_RTP_Caller().STUNPut();
-	    }
-	    catch (MessageHeaderParsingException|UtilityException|IOException|MessageAttributeException e1)
-	    {
-	      e1.printStackTrace();
-	    }
  
-    try
-    {
-      this.rtpSocket = new DatagramSocket(srcRtpPort);
-      this.rtcpSocket = new DatagramSocket(srcRtcpPort);
-      this.rtpSocket.setReuseAddress(true);
-      this.rtcpSocket.setReuseAddress(true);
-    }
-    catch (Exception e)
-    {
-      System.out.println("RTPSession failed to obtain port");
-      JOptionPane.showMessageDialog(null, "RTPSession failed to obtain port");
-      System.exit(-1);
-    }
-    rtpSession = new RTPSession(this.rtpSocket, this.rtcpSocket);
-    Participant p = new Participant(networkAddress, dstRtpPort, dstRtcpPort);
-    rtpSession.addParticipant(p);
-    rtpSession.RTPSessionRegister(this, null, null);
-    Parti_Caller = p.toString();
-    isRegistered = true;
-    try
-    {
-      Thread.sleep(1000L);
-    }
-    catch (Exception localException1) {}
-  }
   public void startTalking2()
   {
     Thread thread = new Thread(new Runnable()
@@ -407,7 +449,7 @@ public class PCS_RTP_Caller
         while (nBytesRead != -1)
         {
           nBytesRead = PCS_RTP_Caller.microphone.read(data, 0, data.length);
-          if (!PCS_RTP_Caller.isRegistered) {
+          if (!PCS_RTP_Caller.isRegistered2) {
             nBytesRead = -1;
           }
           if (nBytesRead >= 0)
@@ -440,11 +482,23 @@ public class PCS_RTP_Caller
     });
     thread.start();
   }
-  
+  static boolean flag = true;
+  static boolean flag2 = true;
   public void receiveData(DataFrame frame, Participant participant)
   {
-    if (speaker != null) {
-      if (speaker != null)
+	 
+	  if (flag) {
+
+		  flag = false;
+		  System.out.println("-------------------------------------------------------------------------------------------------");
+		  //写要执行的代码
+		  System.out.println("speaker++++++++++"+speaker);	
+		  }
+		
+	  
+    if (speaker != null ) {
+      if (speaker != null )
+    	  
       {
         byte[] data = frame.getConcatenatedData();
         speaker.write(data, 0, data.length);
@@ -453,21 +507,40 @@ public class PCS_RTP_Caller
           System.out.println("Received callee's data");
           isReceived = true;
         }
+       
       }
     }
     
-    if ((participant.toString().equals(Parti_Caller)) && (isRegistered))
+    
+    if (flag2) {
+
+		  flag2 = false;
+		  System.out.println("-------------------------------------------------------------------------------------------------");
+		  //写要执行的代码
+		  System.out.println("participant.toString()+++++"+participant.toString());
+		  System.out.println("participant.toString()Parti_Caller+++++"+Parti_Caller);
+		  System.out.println("participant.toString()isRegistered+++++"+isRegistered2);
+		  System.out.println("speaker++++++++++"+speaker);	
+		  }
+		 
+
+    
+    
+    if ((participant.toString().equals(Parti_Caller)) && (isRegistered2))
     {
-    	
-      byte[] data = frame.getConcatenatedData();
+    //	System.out.println("participant.toString()Parti_Caller+++++"+Parti_Caller);	
+   /* 
+    	byte[] data = frame.getConcatenatedData();
       
       speaker.write(data, 0, data.length);
-      if (!this.isReceived)
+   */ 
+      if (!this.isReceived2)
       {
         System.out.println("Received caller's data");
-        this.isReceived = true;
+        this.isReceived2 = true;
       }
     }
+    
   }
   
   public void userEvent(int type, Participant[] participant) {}
@@ -501,14 +574,19 @@ public class PCS_RTP_Caller
  
  
   
-  public static void main(String[] args)
+  public static void main(String [] args)
   {
+	 
+	
     new Shootisttest().init();
+    
     PCS_RTP_Caller obj = new PCS_RTP_Caller();
     obj.setCallerUI("This is Caller!");
     obj.setAudioFormat();
     obj.checkDeviceIsOK();
     obj.initRecorder();
     obj.initPlayer();
+  //  new PCS_RTP_Callee().Callee();
   }
+  
 }

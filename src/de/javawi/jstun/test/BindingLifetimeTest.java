@@ -69,7 +69,9 @@ public class BindingLifetimeTest
   public void test2(int defPORT)
     throws UtilityException, SocketException, UnknownHostException, IOException, MessageAttributeParsingException, MessageAttributeException, MessageHeaderParsingException
   {
+
     this.initialSocket = new DatagramSocket(new InetSocketAddress(defPORT));
+
     this.initialSocket.connect(InetAddress.getByName(this.stunServer), this.port);
     this.initialSocket.setSoTimeout(this.timeout);
     if (bindingCommunicationInitialSocket()) {}
